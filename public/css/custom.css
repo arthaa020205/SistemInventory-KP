@@ -1,0 +1,271 @@
+/* =========================
+   SIDEBAR
+========================= */
+
+.main-sidebar{
+    background:#ffffff !important;
+    border-right:1px solid #dee2e6;
+}
+
+.brand-link{
+    background:#ffffff !important;
+    color:#212529 !important;
+    border-bottom:1px solid #dee2e6;
+}
+
+.brand-link:hover{
+    color:#0d6efd !important;
+}
+
+
+/* =========================
+   MENU
+========================= */
+
+.nav-sidebar>.nav-item>.nav-link{
+
+    color:#495057 !important;
+
+    border-radius:8px;
+
+    margin:3px 8px;
+
+}
+
+.nav-sidebar>.nav-item>.nav-link i{
+
+    color:#6c757d;
+
+}
+
+.nav-sidebar>.nav-item>.nav-link:hover{
+
+    background:#edf2ff !important;
+
+    color:#0d6efd !important;
+
+}
+
+.nav-sidebar>.nav-item>.nav-link:hover i{
+
+    color:#0d6efd;
+
+}
+
+.nav-sidebar>.nav-item>.nav-link.active{
+
+    background:#0d6efd !important;
+
+    color:white !important;
+
+}
+
+.nav-sidebar>.nav-item>.nav-link.active i{
+
+    color:white !important;
+
+}
+
+
+/* =========================
+   HEADER MENU
+========================= */
+
+.nav-header{
+
+    color:#6c757d !important;
+
+    font-weight:bold;
+
+    font-size:12px;
+
+}
+
+
+/* =========================
+   CONTENT
+========================= */
+
+.content-wrapper{
+
+    background:#f5f7fb;
+
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.card{
+
+    border:none;
+
+    border-radius:12px;
+
+    box-shadow:0 4px 15px rgba(0,0,0,.06);
+
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+.btn{
+
+    border-radius:8px;
+
+}
+
+
+/* =========================
+   TABLE
+========================= */
+
+.table{
+
+    margin-bottom:0;
+
+}
+
+.table thead{
+
+    background:#f8f9fa;
+
+}
+
+
+/* =========================
+   BADGE
+========================= */
+
+.badge{
+
+    padding:6px 10px;
+
+    border-radius:20px;
+
+}
+
+
+/* =========================
+   PAGINATION
+========================= */
+
+.page-link{
+
+    border-radius:6px !important;
+
+}
+
+/* =========================
+   SIDEBAR SUBMENU
+========================= */
+
+.nav-sidebar .nav-treeview{
+    padding:0;
+    margin:0;
+}
+
+.nav-sidebar .nav-treeview>.nav-item>.nav-link{
+
+    padding:8px 16px 8px 48px;
+
+    margin:2px 8px;
+
+    border-radius:8px;
+
+    color:#6c757d !important;
+
+    background:transparent;
+
+}
+
+.nav-sidebar .nav-treeview>.nav-item>.nav-link:hover{
+
+    background:#edf2ff !important;
+
+    color:#0d6efd !important;
+
+}
+
+.nav-sidebar .nav-treeview>.nav-item>.nav-link.active{
+
+    background:#dbeafe !important;
+
+    color:#0d6efd !important;
+
+}
+
+.nav-sidebar .nav-treeview>.nav-item>.nav-link .nav-icon{
+
+    width:18px;
+
+    text-align:center;
+
+    margin-right:8px;
+
+    color:#6c757d;
+
+}
+
+.nav-sidebar .menu-open>.nav-treeview{
+
+    display:block;
+
+}
+
+/* =========================
+   FIX ICON / OVERFLOW
+========================= */
+
+html,
+body {
+    overflow-x: hidden !important;
+}
+
+.main-wrapper,
+.wrapper,
+.content-wrapper,
+.content,
+.container,
+.container-fluid {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+/* Jangan biarkan icon membesar */
+i,
+svg,
+.fa,
+.fas,
+.far,
+.fab {
+    max-width: 1em !important;
+    max-height: 1em !important;
+}
+
+/* Fix icon yang mungkin menjadi sangat besar */
+.fa-chevron-left,
+.fa-chevron-right,
+.fa-arrow-left,
+.fa-arrow-right {
+    width: auto !important;
+    height: auto !important;
+    font-size: inherit !important;
+    transform: none !important;
+}
+
+/* Pastikan button normal */
+button,
+.btn {
+    overflow: hidden;
+}
+
+/* Table tidak boleh melebarkan halaman */
+.table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+}

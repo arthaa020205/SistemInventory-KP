@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Logo CKP Inventory */
+.main-sidebar .brand-link {
+    display: flex;
+    align-items: center;
+    height: 72px;
+    padding: 0 18px;
+}
+
+.main-sidebar .brand-link .brand-image {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    margin: 0 10px 0 0;
+    opacity: 1;
+    box-shadow: none !important;
+}
+
+.main-sidebar .brand-link .brand-text {
+    font-size: 18px;
+    line-height: 1;
+    margin: 0;
+}
+
+/* =========================================
+   CKP INVENTORY - SIMPLE PAGE TRANSITION
+========================================= */
+
+
+/* Halaman sebelumnya */
+::view-transition-old(root) {
+    animation: smoothFadeOut 220ms ease-in-out both;
+}
+
+/* Halaman berikutnya */
+::view-transition-new(root) {
+    animation: smoothFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
+
+/* =========================================
+   CKP INVENTORY - SMOOTH PAGE TRANSITION
+========================================= */
+
+@view-transition {
+    navigation: auto;
+}
+
+/* Halaman lama */
+::view-transition-old(root) {
+    animation: smoothFadeOut 180ms ease-in-out both;
+}
+
+/* Halaman baru */
+::view-transition-new(root) {
+    animation: smoothFadeIn 350ms ease-out both;
+}
+
+@keyframes smoothFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Kurangi animasi jika user memilih reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
