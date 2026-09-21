@@ -416,34 +416,79 @@ class BarangController extends Controller
      */
     public function destroy(Barang $barang)
     {
-        $kodeBarang =
-            $barang->kode_barang;
+        $kodeBarang = $barang->kode_barang;
+        $namaBarang = $barang->nama_barang;
 
-        $namaBarang =
-            $barang->nama_barang;
+        /*
+        * Cek apakah barang sudah memiliki riwayat
+        */
+        $adaRiwayat =
+            $barang->barangMasuks()->exists()
+            || $barang->barangKeluars()->exists()
+            || $barang->barangKeluarDetails()->exists()
+            || $barang->stockOpnames()->exists()
+            || $barang->stockAdjustments()->exists()
+            || $barang->konversiSatuan()->exists()
+            || $barang->permintaanPengadaans()->exists();
 
+        /*
+        * Jika sudah memiliki riwayat,
+        * jangan hapus permanen.
+        * Ubah status menjadi Nonaktif.
+        */
+        if ($adaRiwayat) {
 
+            $barang->update([
+                'status' => 'Nonaktif',
+            ]);
+
+            /*
+            * LOG AKTIVITAS
+            */
+            LogAktivitas::create([
+                'user_id' =>
+                    Auth::id(),
+
+                'modul' =>
+                    'Barang',
+
+                'aktivitas' =>
+                    'NONAKTIF',
+
+                'deskripsi' =>
+                    'Menonaktifkan barang '
+                    . $kodeBarang
+                    . ' - '
+                    . $namaBarang
+                    . ' karena memiliki riwayat transaksi.',
+
+                'ip_address' =>
+                    request()->ip(),
+            ]);
+
+            return redirect()
+                ->route('barang.index')
+                ->with(
+                    'success',
+                    'Barang memiliki riwayat transaksi sehingga tidak dihapus. Status barang diubah menjadi Nonaktif.'
+                );
+        }
+
+        /*
+        * Jika belum memiliki riwayat,
+        * konversi boleh dihapus terlebih dahulu.
+        */
         DB::transaction(function () use ($barang) {
 
-            /*
-            * Hapus konversi terlebih dahulu
-            */
             $barang->konversiSatuan()->delete();
 
-
-            /*
-            * Hapus barang
-            */
             $barang->delete();
-
         });
-
 
         /*
         * LOG AKTIVITAS
         */
         LogAktivitas::create([
-
             'user_id' =>
                 Auth::id(),
 
@@ -461,9 +506,7 @@ class BarangController extends Controller
 
             'ip_address' =>
                 request()->ip(),
-
         ]);
-
 
         return redirect()
             ->route('barang.index')

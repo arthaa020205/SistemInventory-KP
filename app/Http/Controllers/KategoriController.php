@@ -105,5 +105,9 @@ class KategoriController extends Controller
             'Kategori',
             'Menghapus kategori: ' . $namaKategori
         );
+
+        return redirect()
+            ->route('kategori.index')
+            ->with('success', 'Kategori berhasil dihapus.');
     }
 }

@@ -18,8 +18,17 @@
            target="_blank"
            class="btn btn-success">
 
-            <i class="fas fa-file-pdf"></i>
-            Cetak Invoice
+            <i class="fas fa-file-invoice-dollar"></i>
+            Cetak Faktur
+
+        </a>
+
+        <a href="{{ route('barang-keluar.surat-jalan', $barangKeluar) }}"
+           target="_blank"
+           class="btn btn-primary ml-1">
+
+            <i class="fas fa-truck"></i>
+            Cetak Surat Jalan
 
         </a>
 

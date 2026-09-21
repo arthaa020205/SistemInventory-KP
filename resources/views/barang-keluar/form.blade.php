@@ -239,51 +239,6 @@ if ($oldItems) {
 
 
 {{-- ===================================================== --}}
-{{-- QR SCANNER --}}
-{{-- ===================================================== --}}
-
-<div
-    id="qrScannerContainer"
-    class="card border mb-3"
-    style="display:none;"
->
-
-    <div class="card-header bg-dark text-white">
-        <strong>
-            <i class="fas fa-camera me-1"></i>
-            Scan QR Barang
-        </strong>
-    </div>
-
-    <div class="card-body text-center">
-
-        <div
-            id="qr-reader"
-            style="width:500px; max-width:100%; margin:0 auto;"
-        ></div>
-
-        <div
-            id="qrMessage"
-            class="alert alert-info mt-3 mb-0"
-        >
-            Arahkan kamera ke QR Code barang.
-        </div>
-
-        <button
-            type="button"
-            class="btn btn-danger mt-3"
-            id="btnCloseScanner"
-        >
-            <i class="fas fa-times me-1"></i>
-            Tutup Scanner
-        </button>
-
-    </div>
-
-</div>
-
-
-{{-- ===================================================== --}}
 {{-- INFORMASI BARANG --}}
 {{-- ===================================================== --}}
 
@@ -517,6 +472,52 @@ if ($oldItems) {
 
 </div>
 
+{{-- ===================================================== --}}
+{{-- QR SCANNER --}}
+{{-- ===================================================== --}}
+
+<div
+    id="qrScannerContainer"
+    class="card border mb-3"
+    style="display:none;"
+>
+
+    <div class="card-header bg-dark text-white">
+        <strong>
+            <i class="fas fa-camera me-1"></i>
+            Scan QR Barang
+        </strong>
+    </div>
+
+    <div class="card-body text-center">
+
+        <div
+            id="qr-reader"
+            style="width:500px; max-width:100%; margin:0 auto;"
+        ></div>
+
+        <div
+            id="qrMessage"
+            class="alert alert-info mt-3 mb-0"
+        >
+            Arahkan kamera ke QR Code barang.
+        </div>
+
+        <button
+            type="button"
+            class="btn btn-danger mt-3"
+            id="btnCloseScanner"
+        >
+            <i class="fas fa-times me-1"></i>
+            Tutup Scanner
+        </button>
+
+    </div>
+
+</div>
+
+
+
 {{-- ========================================================= --}}
 {{-- TANGGAL --}}
 {{-- ========================================================= --}}
@@ -666,15 +667,17 @@ if ($oldItems) {
                             Barang <span class="text-danger">*</span>
                         </label>
 
-                        <select
-                            name="items[{{ $index }}][barang_id]"
-                            class="form-select item-barang"
-                            required
-                        >
+                        <div class="input-group">
 
-                            <option value="">
-                                -- Pilih Barang --
-                            </option>
+                            <select
+                                name="items[{{ $index }}][barang_id]"
+                                class="form-select item-barang"
+                                required
+                            >
+
+                                <option value="">
+                                    -- Pilih Barang --
+                                </option>
 
                             @foreach ($barang as $barangItem)
 
@@ -694,7 +697,18 @@ if ($oldItems) {
 
                             @endforeach
 
-                        </select>
+                            </select>
+
+                            <button
+                                type="button"
+                                class="btn btn-dark btn-scan-qr-item"
+                                title="Scan QR Barang"
+                            >
+                                <i class="fas fa-qrcode me-1"></i>
+                                Scan QR
+                            </button>
+
+                        </div>
 
                         @error("items.$index.barang_id")
                             <div class="text-danger small mt-1">
@@ -1511,25 +1525,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const isPenjualan =
             jenisSelect.value === 'Penjualan';
 
-        /*
-        |--------------------------------------------------------------------------
-        | MODE PENJUALAN
-        |--------------------------------------------------------------------------
-        */
+        const itemInputs =
+            document.querySelectorAll(
+                '#penjualan-items input, #penjualan-items select'
+            );
 
         if (isPenjualan) {
 
-            // Sembunyikan input single item
+            // Mode Penjualan: gunakan multi-item
             singleBarangWrapper.classList.add('d-none');
-
-            // Tampilkan multi item
             penjualanWrapper.classList.remove('d-none');
 
-            // Pelanggan wajib diisi
             pelangganSelect.required = true;
             pelangganSelect.disabled = false;
 
-            // Matikan input single item
+            // Matikan field single-item agar tidak ikut validasi/form
             barangSelect.required = false;
             satuanSelect.required = false;
             jumlahInput.required = false;
@@ -1540,14 +1550,11 @@ document.addEventListener('DOMContentLoaded', function () {
             nilaiKonversiInput.disabled = true;
             jumlahDasarInput.disabled = true;
 
-            // Aktifkan semua input Penjualan
-            document
-                .querySelectorAll('#penjualan-items input, #penjualan-items select')
-                .forEach(function (input) {
-                    input.disabled = false;
-                });
+            // Aktifkan field multi-item dan required hanya saat Penjualan
+            itemInputs.forEach(function (input) {
+                input.disabled = false;
+            });
 
-            // Pastikan required item aktif
             document
                 .querySelectorAll('#penjualan-items .item-barang')
                 .forEach(function (input) {
@@ -1575,27 +1582,16 @@ document.addEventListener('DOMContentLoaded', function () {
             initSemuaItemPenjualan();
             hitungTotalPenjualan();
 
-        }
+        } else {
 
-        /*
-        |--------------------------------------------------------------------------
-        | MODE SELAIN PENJUALAN
-        |--------------------------------------------------------------------------
-        */
-
-        else {
-
-            // Tampilkan input single item
+            // Mode selain Penjualan: gunakan satu barang
             singleBarangWrapper.classList.remove('d-none');
-
-            // Sembunyikan multi item
             penjualanWrapper.classList.add('d-none');
 
-            // Pelanggan tidak digunakan
             pelangganSelect.required = false;
             pelangganSelect.disabled = true;
 
-            // Aktifkan input single item
+            // Aktifkan field single-item
             barangSelect.disabled = false;
             satuanSelect.disabled = false;
             jumlahInput.disabled = false;
@@ -1606,27 +1602,17 @@ document.addEventListener('DOMContentLoaded', function () {
             satuanSelect.required = true;
             jumlahInput.required = true;
 
-            /*
-            |--------------------------------------------------------------------------
-            | PENTING:
-            | Disable semua input Penjualan supaya browser tidak
-            | memvalidasi required field yang sedang tersembunyi.
-            |--------------------------------------------------------------------------
-            */
-
-            document
-                .querySelectorAll('#penjualan-items input, #penjualan-items select')
-                .forEach(function (input) {
-
-                    input.disabled = true;
-                    input.required = false;
-
-                });
+            // SANGAT PENTING:
+            // Field Penjualan yang sedang tersembunyi harus disabled
+            // dan tidak boleh required, agar tombol Simpan bisa submit.
+            itemInputs.forEach(function (input) {
+                input.disabled = true;
+                input.required = false;
+            });
 
         }
 
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -2145,6 +2131,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             Barang <span class="text-danger">*</span>
                         </label>
 
+                        <div class="input-group">
+
                         <select
                             name="items[${index}][barang_id]"
                             class="form-select item-barang"
@@ -2173,6 +2161,17 @@ document.addEventListener('DOMContentLoaded', function () {
                             @endforeach
 
                         </select>
+
+                            <button
+                                type="button"
+                                class="btn btn-dark btn-scan-qr-item"
+                                title="Scan QR Barang"
+                            >
+                                <i class="fas fa-qrcode me-1"></i>
+                                Scan QR
+                            </button>
+
+                        </div>
 
                     </div>
 
@@ -2716,41 +2715,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 jenisSelect.value === 'Penjualan'
             ) {
 
-                const emptyRow =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.penjualan-item'
-                        )
-                    ).find(function (row) {
+                let targetRow = scannerTargetRow;
 
-                        return !row.querySelector(
-                            '.item-barang'
-                        ).value;
+                if (targetRow && !document.body.contains(targetRow)) {
+                    targetRow = null;
+                }
 
-                    });
+                if (!targetRow) {
 
+                    const emptyRow =
+                        Array.from(
+                            document.querySelectorAll(
+                                '.penjualan-item'
+                            )
+                        ).find(function (row) {
 
-                let targetRow;
+                            return !row.querySelector(
+                                '.item-barang'
+                            ).value;
 
+                        });
 
-                if (emptyRow) {
+                    if (emptyRow) {
 
-                    targetRow =
-                        emptyRow;
+                        targetRow = emptyRow;
 
-                } else {
+                    } else {
 
-                    btnTambahBarang.click();
+                        btnTambahBarang.click();
 
+                        const rows =
+                            document.querySelectorAll(
+                                '.penjualan-item'
+                            );
 
-                    const rows =
-                        document.querySelectorAll(
-                            '.penjualan-item'
-                        );
-
-
-                    targetRow =
-                        rows[rows.length - 1];
+                        targetRow =
+                            rows[rows.length - 1];
+                    }
 
                 }
 
@@ -2770,6 +2771,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 hitungItemPenjualan(
                     targetRow
                 );
+
+                scannerTargetRow = null;
 
             } else {
 
@@ -2849,7 +2852,9 @@ document.addEventListener('DOMContentLoaded', function () {
     |--------------------------------------------------------------------------
     */
 
-    async function mulaiScanner() {
+    async function mulaiScanner(targetRow = null) {
+
+        scannerTargetRow = targetRow;
 
         if (scannerRunning) {
 
@@ -3107,6 +3112,8 @@ document.addEventListener('DOMContentLoaded', function () {
         sedangMemproses =
             false;
 
+        scannerTargetRow = null;
+
 
         qrScannerContainer.style.display =
             'none';
@@ -3225,6 +3232,40 @@ document.addEventListener('DOMContentLoaded', function () {
         function () {
 
             mulaiScanner();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SCAN QR ITEM PENJUALAN
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'click',
+        function (event) {
+
+            const button =
+                event.target.closest(
+                    '.btn-scan-qr-item'
+                );
+
+            if (!button) {
+                return;
+            }
+
+            const row =
+                button.closest(
+                    '.penjualan-item'
+                );
+
+            if (!row) {
+                return;
+            }
+
+            mulaiScanner(row);
 
         }
     );

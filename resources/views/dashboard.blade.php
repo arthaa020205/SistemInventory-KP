@@ -206,6 +206,58 @@
         color: #007bff;
     }
 
+    .expired-dashboard-card .card-header {
+        background: linear-gradient(135deg, #fffdf5 0%, #ffffff 100%);
+    }
+
+    .expired-summary-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 10px;
+        padding: 10px;
+        min-height: 64px;
+    }
+
+    .expired-summary-box strong {
+        display: block;
+        font-size: 20px;
+        line-height: 1.1;
+    }
+
+    .expired-summary-box small {
+        display: block;
+        font-size: 11px;
+        margin-top: 3px;
+    }
+
+    .expired-summary-icon {
+        font-size: 20px;
+    }
+
+    .expired-summary-danger {
+        background: #ffe3e6;
+        color: #dc3545;
+    }
+
+    .expired-summary-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .expired-summary-info {
+        background: #dff3ff;
+        color: #007bff;
+    }
+
+    .expired-dashboard-card tbody tr {
+        transition: .2s;
+    }
+
+    .expired-dashboard-card tbody tr:hover {
+        background: #fafafa;
+    }
+
 
     /* CHART */
 
@@ -854,26 +906,146 @@
 
     <div class="col-lg-6 mb-4">
 
-        <div class="card dashboard-card">
+        <div class="card dashboard-card expired-dashboard-card">
 
             <div class="card-header">
 
-                <h3 class="card-title">
+                <div class="d-flex justify-content-between align-items-center">
 
-                    <i class="fas fa-calendar-times text-warning mr-2"></i>
+                    <h3 class="card-title">
 
-                    Barang Mendekati ED
+                        <i class="fas fa-calendar-times text-warning mr-2"></i>
+                        Monitoring Barang Expired
 
-                </h3>
+                    </h3>
+
+                    <span class="badge badge-light border">
+                        {{ $barangMendekatiEd->count() }} data
+                    </span>
+
+                </div>
+
+                <small class="text-muted d-block mt-1">
+                    Menampilkan barang yang memiliki tanggal kedaluwarsa
+                    dan perlu dipantau.
+                </small>
 
             </div>
 
 
-            <div class="card-body p-0">
+            <div class="card-body">
+
+                @php
+
+                    $expiredCount = 0;
+                    $kritisCount = 0;
+                    $pantauCount = 0;
+
+                    foreach ($barangMendekatiEd as $expiredItem) {
+
+                        $expiredDate = \Carbon\Carbon::parse(
+                            $expiredItem->expired_date
+                        );
+
+                        $daysRemaining = now()
+                            ->startOfDay()
+                            ->diffInDays(
+                                $expiredDate,
+                                false
+                            );
+
+                        if ($daysRemaining < 0) {
+                            $expiredCount++;
+                        } elseif ($daysRemaining <= 7) {
+                            $kritisCount++;
+                        } else {
+                            $pantauCount++;
+                        }
+                    }
+
+                @endphp
+
+
+                {{-- RINGKASAN STATUS ED --}}
+
+                <div class="row mb-3">
+
+                    <div class="col-4">
+
+                        <div class="expired-summary-box expired-summary-danger">
+
+                            <div class="expired-summary-icon">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {{ $expiredCount }}
+                                </strong>
+
+                                <small>
+                                    Sudah Expired
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-4">
+
+                        <div class="expired-summary-box expired-summary-warning">
+
+                            <div class="expired-summary-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {{ $kritisCount }}
+                                </strong>
+
+                                <small>
+                                    ≤ 7 Hari
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-4">
+
+                        <div class="expired-summary-box expired-summary-info">
+
+                            <div class="expired-summary-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {{ $pantauCount }}
+                                </strong>
+
+                                <small>
+                                    Perlu Dipantau
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- DAFTAR BARANG EXPIRED --}}
 
                 <div class="table-responsive">
 
-                    <table class="table dashboard-table">
+                    <table class="table table-hover dashboard-table mb-0">
 
                         <thead>
 
@@ -931,17 +1103,19 @@
                                     <br>
 
                                     <small class="text-muted">
-
                                         {{ $item->barang->kode_barang ?? '-' }}
-
                                     </small>
 
-                                </td>
+                                    @if(isset($item->supplier))
 
+                                        <br>
 
-                                <td class="text-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-truck mr-1"></i>
+                                            {{ $item->supplier->nama_supplier ?? '-' }}
+                                        </small>
 
-                                    {{ $tanggalEd->format('d-m-Y') }}
+                                    @endif
 
                                 </td>
 
@@ -949,32 +1123,75 @@
                                 <td class="text-center">
 
                                     <strong>
-                                        {{ $sisaHari }}
+                                        {{ $tanggalEd->format('d-m-Y') }}
                                     </strong>
 
-                                    hari
+                                    <br>
+
+                                    <small class="text-muted">
+                                        {{ $tanggalEd->translatedFormat('l') }}
+                                    </small>
 
                                 </td>
 
 
                                 <td class="text-center">
 
-                                    @if($sisaHari <= 7)
+                                    @if($sisaHari < 0)
+
+                                        <strong class="text-danger">
+                                            {{ abs($sisaHari) }} hari
+                                        </strong>
+
+                                        <br>
+
+                                        <small class="text-danger">
+                                            Terlewat
+                                        </small>
+
+                                    @elseif($sisaHari == 0)
+
+                                        <strong class="text-danger">
+                                            Hari ini
+                                        </strong>
+
+                                    @else
+
+                                        <strong
+                                            class="{{ $sisaHari <= 7 ? 'text-danger' : ($sisaHari <= 30 ? 'text-warning' : 'text-info') }}"
+                                        >
+                                            {{ $sisaHari }} hari
+                                        </strong>
+
+                                    @endif
+
+                                </td>
+
+
+                                <td class="text-center">
+
+                                    @if($sisaHari < 0)
 
                                         <span class="stock-badge badge-stock-danger">
-                                            Sangat Dekat
+                                            Expired
                                         </span>
 
-                                    @elseif($sisaHari <= 14)
+                                    @elseif($sisaHari <= 7)
+
+                                        <span class="stock-badge badge-stock-danger">
+                                            Kritis
+                                        </span>
+
+                                    @elseif($sisaHari <= 30)
 
                                         <span class="stock-badge badge-stock-warning">
-                                            Dekat
+                                            Segera
                                         </span>
 
                                     @else
 
                                         <span class="stock-badge badge-stock-info">
-                                            Perlu Dipantau
+                                            Dipantau
                                         </span>
 
                                     @endif
@@ -989,11 +1206,13 @@
 
                                 <td
                                     colspan="4"
-                                    class="text-center text-muted py-4">
+                                    class="text-center text-muted py-4"
+                                >
 
                                     <i class="fas fa-check-circle text-success mr-1"></i>
 
-                                    Tidak ada barang yang mendekati ED.
+                                    Tidak ada barang yang perlu dipantau
+                                    terkait tanggal kedaluwarsa.
 
                                 </td>
 

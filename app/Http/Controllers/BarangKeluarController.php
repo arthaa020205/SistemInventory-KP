@@ -1661,6 +1661,24 @@ class BarangKeluarController extends Controller
             );
     }
 
+
+    public function suratJalan(BarangKeluar $barangKeluar)
+    {
+        $barangKeluar->load([
+            'pelanggan',
+            'user',
+            'details.barang.satuan',
+            'details.satuan',
+        ]);
+
+        if ($barangKeluar->jenis_keluar !== 'Penjualan') {
+            abort(404);
+        }
+
+        return view('barang-keluar.surat-jalan', compact('barangKeluar'));
+    }
+
+
     public function invoice(BarangKeluar $barangKeluar)
     {
         $barangKeluar->load([

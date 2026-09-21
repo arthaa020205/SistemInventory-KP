@@ -20,7 +20,7 @@
             href="{{ route('barang-keluar.create') }}"
             class="btn btn-primary">
 
-            <i class="fas fa-plus"></i>
+            <i class="fas fa-plus mr-1"></i>
 
             Tambah Barang Keluar
 
@@ -52,12 +52,11 @@
 
         </div>
 
-
         <div class="col-md-3">
 
             <select
                 name="jenis"
-                class="form-select"
+                class="form-control"
                 onchange="this.form.submit()">
 
                 <option value="">
@@ -65,10 +64,10 @@
                 </option>
 
                 <option
-                    value="Transfer Ke Toko"
-                    @selected($jenis == 'Transfer Ke Toko')>
+                    value="Transfer ke Toko"
+                    @selected($jenis == 'Transfer ke Toko')>
 
-                    Transfer Ke Toko
+                    Transfer ke Toko
 
                 </option>
 
@@ -89,14 +88,6 @@
                 </option>
 
                 <option
-                    value="Retur"
-                    @selected($jenis == 'Retur')>
-
-                    Retur
-
-                </option>
-
-                <option
                     value="Pemakaian Internal"
                     @selected($jenis == 'Pemakaian Internal')>
 
@@ -112,10 +103,17 @@
 
                 </option>
 
+                <option
+                    value="Return"
+                    @selected($jenis == 'Return')>
+
+                    Return
+
+                </option>
+
             </select>
 
         </div>
-
 
         <div class="col-md-2">
 
@@ -127,7 +125,6 @@
 
         </div>
 
-
         <div class="col-md-2">
 
             <input
@@ -138,17 +135,15 @@
 
         </div>
 
-
         <div class="col-md-2 d-flex">
 
             <button
                 type="submit"
-                class="btn btn-primary me-2">
+                class="btn btn-primary mr-2">
 
                 <i class="fas fa-search"></i>
 
             </button>
-
 
             <a
                 href="{{ route('barang-keluar.index') }}"
@@ -170,7 +165,7 @@
 
     <table class="table table-bordered table-hover">
 
-        <thead class="table-light">
+        <thead class="thead-light">
 
             <tr>
 
@@ -190,7 +185,6 @@
 
                 <th>Petugas</th>
 
-
                 @can('barang-keluar.view')
 
                     <th width="150" class="text-center">
@@ -208,75 +202,146 @@
 
             @forelse($data as $item)
 
+                @php
+                    /*
+                    |--------------------------------------------------------------------------
+                    | PENJUALAN MULTI ITEM
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $isPenjualan = $item->jenis_keluar === 'Penjualan';
+
+                    $details = $isPenjualan
+                        ? $item->details
+                        : collect();
+
+                    $jumlahDetail = $details->count();
+
+                    $totalQtyPenjualan = $details->sum('jumlah');
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | BARANG NON PENJUALAN
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $namaBarang = $item->barang?->nama_barang ?? '-';
+
+                    $jumlahBarang = $item->jumlah ?? 0;
+                @endphp
+
+
                 <tr>
 
+                    {{-- NO --}}
                     <td>
                         {{ $loop->iteration + $data->firstItem() - 1 }}
                     </td>
 
 
+                    {{-- KODE --}}
                     <td>
-                        {{ $item->kode_transaksi }}
+
+                        <strong>
+                            {{ $item->kode_transaksi }}
+                        </strong>
+
                     </td>
 
 
+                    {{-- TANGGAL --}}
                     <td>
-                        {{ $item->tanggal_keluar->format('d-m-Y') }}
+
+                        {{ $item->tanggal_keluar?->format('d-m-Y') ?? '-' }}
+
                     </td>
 
 
-                    <td>
-                        {{ $item->barang->nama_barang }}
-                    </td>
-
-
-                    <td class="text-center">
-                        {{ $item->jumlah }}
-                    </td>
-
-
+                    {{-- BARANG --}}
                     <td>
 
-                        @if($item->jenis_keluar == 'Transfer Ke Toko')
+                        @if($isPenjualan && $jumlahDetail > 0)
 
-                            <span class="badge bg-success">
-                                Transfer Ke Toko
-                            </span>
+                            {{-- PENJUALAN MULTI ITEM --}}
 
-                        @elseif($item->jenis_keluar == 'Penjualan')
+                            <div>
 
-                            <span class="badge bg-primary">
-                                Penjualan
-                            </span>
+                                <strong>
+                                    {{ $jumlahDetail }} barang
+                                </strong>
 
-                        @elseif($item->jenis_keluar == 'Rusak')
+                            </div>
 
-                            <span class="badge bg-danger">
-                                Rusak
-                            </span>
+                            <div class="mt-1">
 
-                        @elseif($item->jenis_keluar == 'Pemakaian Internal')
+                                @foreach($details->take(3) as $detail)
 
-                            <span class="badge bg-info">
-                                Pemakaian Internal
-                            </span>
+                                    <div class="small text-muted">
 
-                        @elseif($item->jenis_keluar == 'Kadaluarsa')
+                                        <i class="fas fa-box mr-1"></i>
 
-                            <span class="badge bg-secondary">
-                                Kadaluarsa
-                            </span>
+                                        {{ $detail->barang?->nama_barang ?? '-' }}
 
-                        @elseif($item->jenis_keluar == 'Retur')
+                                        <span class="text-dark">
+                                            ({{ rtrim(rtrim(number_format($detail->jumlah, 2, ',', '.'), '0'), ',') }}
+                                            {{ $detail->satuan?->nama_satuan ?? '' }})
+                                        </span>
 
-                            <span class="badge bg-warning text-dark">
-                                Retur
-                            </span>
+                                    </div>
+
+                                @endforeach
+
+
+                                @if($jumlahDetail > 3)
+
+                                    <div class="small text-primary mt-1">
+
+                                        <i class="fas fa-ellipsis-h mr-1"></i>
+
+                                        +{{ $jumlahDetail - 3 }} barang lainnya
+
+                                    </div>
+
+                                @endif
+
+                            </div>
 
                         @else
 
-                            <span class="badge bg-dark">
-                                {{ $item->jenis_keluar }}
+                            {{-- BARANG BIASA --}}
+
+                            <strong>
+                                {{ $namaBarang }}
+                            </strong>
+
+                        @endif
+
+                    </td>
+
+
+                    {{-- QTY --}}
+                    <td class="text-center">
+
+                        @if($isPenjualan && $jumlahDetail > 0)
+
+                            <span class="badge badge-primary">
+
+                                {{ rtrim(rtrim(number_format($totalQtyPenjualan, 2, ',', '.'), '0'), ',') }}
+
+                            </span>
+
+                            <div class="small text-muted mt-1">
+
+                                {{ $jumlahDetail }} jenis
+
+                            </div>
+
+                        @else
+
+                            <span class="badge badge-secondary">
+
+                                {{ rtrim(rtrim(number_format($jumlahBarang, 2, ',', '.'), '0'), ',') }}
+
                             </span>
 
                         @endif
@@ -284,13 +349,95 @@
                     </td>
 
 
+                    {{-- JENIS --}}
                     <td>
-                        {{ $item->tujuan ?? '-' }}
+
+                        @if($item->jenis_keluar === 'Transfer ke Toko')
+
+                            <span class="badge badge-success">
+
+                                <i class="fas fa-store mr-1"></i>
+
+                                Transfer ke Toko
+
+                            </span>
+
+                        @elseif($item->jenis_keluar === 'Penjualan')
+
+                            <span class="badge badge-primary">
+
+                                <i class="fas fa-shopping-cart mr-1"></i>
+
+                                Penjualan
+
+                            </span>
+
+                        @elseif($item->jenis_keluar === 'Rusak')
+
+                            <span class="badge badge-danger">
+
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+
+                                Rusak
+
+                            </span>
+
+                        @elseif($item->jenis_keluar === 'Pemakaian Internal')
+
+                            <span class="badge badge-info">
+
+                                <i class="fas fa-tools mr-1"></i>
+
+                                Pemakaian Internal
+
+                            </span>
+
+                        @elseif($item->jenis_keluar === 'Kadaluarsa')
+
+                            <span class="badge badge-secondary">
+
+                                <i class="fas fa-calendar-times mr-1"></i>
+
+                                Kadaluarsa
+
+                            </span>
+
+                        @elseif($item->jenis_keluar === 'Return')
+
+                            <span class="badge badge-warning">
+
+                                <i class="fas fa-undo mr-1"></i>
+
+                                Return
+
+                            </span>
+
+                        @else
+
+                            <span class="badge badge-dark">
+
+                                {{ $item->jenis_keluar }}
+
+                            </span>
+
+                        @endif
+
                     </td>
 
 
+                    {{-- TUJUAN --}}
                     <td>
-                        {{ $item->user->name }}
+
+                        {{ $item->tujuan ?? '-' }}
+
+                    </td>
+
+
+                    {{-- PETUGAS --}}
+                    <td>
+
+                        {{ $item->user?->name ?? '-' }}
+
                     </td>
 
 

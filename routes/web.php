@@ -252,6 +252,11 @@ Route::middleware('auth')->group(function () {
         'invoice'
     ])->name('barang-keluar.invoice');
 
+    Route::get('/barang-keluar/{barangKeluar}/surat-jalan', [
+        \App\Http\Controllers\BarangKeluarController::class,
+        'suratJalan'
+    ])->name('barang-keluar.surat-jalan');
+
 
     // Stock Opname
     Route::resource('stock-opname', StockOpnameController::class)
