@@ -13,11 +13,13 @@ class LogAktivitasController extends Controller
 
         $data = LogAktivitas::with('user')
             ->when($search, function ($query) use ($search) {
-                $query->where('aktivitas', 'like', "%{$search}%")
-                    ->orWhere('modul', 'like', "%{$search}%")
-                    ->orWhere('deskripsi', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('aktivitas', 'like', "%{$search}%")
+                        ->orWhere('modul', 'like', "%{$search}%")
+                        ->orWhere('deskripsi', 'like', "%{$search}%");
+                });
             })
-            ->latest()
+            ->latest('created_at')
             ->paginate(15)
             ->withQueryString();
 

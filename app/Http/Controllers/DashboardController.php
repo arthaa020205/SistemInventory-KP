@@ -59,9 +59,9 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $barangMasuk = BarangMasuk::sum('jumlah');
+        $barangMasuk = BarangMasuk::count();
 
-        $barangKeluar = BarangKeluar::sum('jumlah');
+        $barangKeluar = BarangKeluar::count();
 
         $totalStockOpname = StockOpname::count();
 
@@ -174,7 +174,7 @@ class DashboardController extends Controller
                     'tanggal_masuk',
                     $bulan
                 )
-                ->sum('jumlah');
+                ->count();
 
 
             $grafikKeluar[] = BarangKeluar::whereYear(
@@ -185,7 +185,7 @@ class DashboardController extends Controller
                     'tanggal_keluar',
                     $bulan
                 )
-                ->sum('jumlah');
+                ->count();
         }
 
 

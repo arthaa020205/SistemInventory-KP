@@ -290,11 +290,17 @@
             <span class="badge badge-{{ $statusInventoryClass }} px-3 py-2">
 
                 @if($statusInventoryClass == 'success')
+
                     <i class="fas fa-check-circle mr-1"></i>
+
                 @elseif($statusInventoryClass == 'warning')
+
                     <i class="fas fa-exclamation-triangle mr-1"></i>
+
                 @else
+
                     <i class="fas fa-times-circle mr-1"></i>
+
                 @endif
 
                 {{ $statusInventory }}
@@ -471,9 +477,7 @@
                     </strong>
 
                     <div class="small mt-1">
-
                         {{ $item['message'] }}
-
                     </div>
 
                 </div>
@@ -491,8 +495,10 @@
                 </strong>
 
                 <div class="small mt-1">
+
                     Tidak terdapat kondisi khusus yang membutuhkan
                     perhatian berdasarkan data monitoring saat ini.
+
                 </div>
 
             </div>
@@ -527,7 +533,9 @@
                         </small>
 
                         <h2 class="font-weight-bold text-success mt-2 mb-1">
+
                             {{ number_format($barangMasukPeriode) }}
+
                         </h2>
 
                         <small class="text-muted">
@@ -568,11 +576,13 @@
                         </small>
 
                         <h2 class="font-weight-bold text-danger mt-2 mb-1">
+
                             {{ number_format($barangKeluarPeriode) }}
+
                         </h2>
 
                         <small class="text-muted">
-                            Pada periode terpilih
+                            Non-penjualan + penjualan
                         </small>
 
                     </div>
@@ -609,7 +619,9 @@
                         </small>
 
                         <h2 class="font-weight-bold text-primary mt-2 mb-1">
+
                             {{ number_format($stockOpnamePeriode) }}
+
                         </h2>
 
                         <small class="text-muted">
@@ -695,7 +707,9 @@
 
 <div class="row">
 
-    {{-- FAST MOVING --}}
+    {{-- =====================================================
+        FAST MOVING
+    ====================================================== --}}
     <div class="col-lg-4 mb-4">
 
         <div class="card border-0 shadow-sm h-100">
@@ -711,7 +725,10 @@
                 </h5>
 
                 <small class="text-muted">
-                    Barang dengan jumlah pengeluaran tertinggi.
+
+                    Barang dengan jumlah pengeluaran tertinggi
+                    dari transaksi non-penjualan dan penjualan.
+
                 </small>
 
             </div>
@@ -723,24 +740,28 @@
 
                     <div class="mb-3">
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
 
                             <span class="font-weight-bold">
 
-                                {{ $item->barang->nama_barang }}
+                                {{ $item->nama_barang ?? '-' }}
 
                             </span>
 
+
                             <span class="badge badge-danger">
 
-                                {{ number_format($item->total_keluar) }}
+                                {{ number_format((float) $item->total_keluar, 0, ',', '.') }}
 
                             </span>
 
                         </div>
 
+
                         <small class="text-muted">
+
                             Total barang keluar
+
                         </small>
 
                     </div>
@@ -766,7 +787,10 @@
     </div>
 
 
-    {{-- SLOW MOVING --}}
+
+    {{-- =====================================================
+        SLOW MOVING
+    ====================================================== --}}
     <div class="col-lg-4 mb-4">
 
         <div class="card border-0 shadow-sm h-100">
@@ -782,7 +806,10 @@
                 </h5>
 
                 <small class="text-muted">
-                    Barang dengan jumlah pengeluaran terendah.
+
+                    Barang dengan jumlah pengeluaran terendah
+                    dari transaksi non-penjualan dan penjualan.
+
                 </small>
 
             </div>
@@ -794,24 +821,28 @@
 
                     <div class="mb-3">
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
 
                             <span class="font-weight-bold">
 
-                                {{ $item->barang->nama_barang }}
+                                {{ $item->nama_barang ?? '-' }}
 
                             </span>
 
+
                             <span class="badge badge-warning">
 
-                                {{ number_format($item->total_keluar) }}
+                                {{ number_format((float) $item->total_keluar, 0, ',', '.') }}
 
                             </span>
 
                         </div>
 
+
                         <small class="text-muted">
+
                             Total barang keluar
+
                         </small>
 
                     </div>
@@ -837,7 +868,10 @@
     </div>
 
 
-    {{-- STOK TERBANYAK --}}
+
+    {{-- =====================================================
+        STOK TERBANYAK
+    ====================================================== --}}
     <div class="col-lg-4 mb-4">
 
         <div class="card border-0 shadow-sm h-100">
@@ -853,7 +887,9 @@
                 </h5>
 
                 <small class="text-muted">
+
                     Barang dengan jumlah stok terbesar.
+
                 </small>
 
             </div>
@@ -865,7 +901,7 @@
 
                     <div class="mb-3">
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
 
                             <span class="font-weight-bold">
 
@@ -873,16 +909,20 @@
 
                             </span>
 
+
                             <span class="badge badge-primary">
 
-                                {{ number_format($item->stok) }}
+                                {{ number_format($item->stok, 0, ',', '.') }}
 
                             </span>
 
                         </div>
 
+
                         <small class="text-muted">
+
                             Stok tersedia
+
                         </small>
 
                     </div>
@@ -920,7 +960,9 @@
     <i class="fas fa-warehouse text-primary mr-2"></i>
 
     <h5 class="font-weight-bold mb-0">
+
         Kondisi Stok yang Perlu Diperhatikan
+
     </h5>
 
 </div>
@@ -944,7 +986,9 @@
                 </h5>
 
                 <small class="text-muted">
+
                     Barang yang saat ini tidak memiliki stok.
+
                 </small>
 
             </div>
@@ -1047,6 +1091,7 @@
     </div>
 
 
+
     {{-- STOK BERLEBIH --}}
     <div class="col-lg-6 mb-4">
 
@@ -1063,8 +1108,10 @@
                 </h5>
 
                 <small class="text-muted">
+
                     Barang dengan stok relatif tinggi dibandingkan
                     batas minimumnya.
+
                 </small>
 
             </div>
@@ -1112,8 +1159,10 @@
                                     <br>
 
                                     <small class="text-muted">
+
                                         Minimum:
                                         {{ $item->stok_minimum }}
+
                                     </small>
 
                                 </td>
@@ -1188,7 +1237,9 @@
         </h5>
 
         <small class="text-muted">
+
             Barang yang berada pada atau di bawah batas minimum stok.
+
         </small>
 
     </div>
@@ -1283,11 +1334,15 @@
                             <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
 
                             <div class="font-weight-bold">
+
                                 Tidak ada barang yang menipis.
+
                             </div>
 
                             <small class="text-muted">
+
                                 Kondisi stok relatif aman.
+
                             </small>
 
                         </td>
@@ -1325,7 +1380,9 @@
         </h5>
 
         <small class="text-muted">
+
             Aktivitas barang masuk dan keluar pada periode terpilih.
+
         </small>
 
     </div>
@@ -1363,62 +1420,33 @@
 
 
                 <tbody>
+                    @forelse ($aktivitasTerbaru as $aktivitas)
+                        <tr>
+                            <td>
+                                {{ $aktivitas['tanggal']->timezone('Asia/Jakarta')->format('d-m-Y H:i') }}
+                            </td>
 
-                @forelse($aktivitasTerbaru as $item)
+                            <td>
+                                <strong>{{ $aktivitas['kode'] }}</strong>
+                            </td>
 
-                    <tr>
+                            <td>
+                                {{ $aktivitas['barang'] }}
+                            </td>
 
-                        <td>
-
-                            {{ \Carbon\Carbon::parse($item['tanggal'])->format('d-m-Y H:i') }}
-
-                        </td>
-
-                        <td>
-
-                            <strong>
-                                {{ $item['kode'] }}
-                            </strong>
-
-                        </td>
-
-                        <td>
-
-                            {{ $item['barang'] ?? '-' }}
-
-                        </td>
-
-                        <td>
-
-                            <span class="badge badge-{{ $item['badge'] }}">
-
-                                {{ $item['jenis'] }}
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-                @empty
-
-                    <tr>
-
-                        <td colspan="4"
-                            class="text-center py-5">
-
-                            <i class="fas fa-history fa-2x text-muted mb-2"></i>
-
-                            <div>
+                            <td>
+                                <span class="badge bg-{{ $aktivitas['badge'] }}">
+                                    {{ $aktivitas['jenis'] }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center">
                                 Belum ada aktivitas.
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                @endforelse
-
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
 
             </table>
@@ -1471,6 +1499,8 @@
 </div>
 
 @stop
+
+
 
 {{-- =============================================================
 JAVASCRIPT

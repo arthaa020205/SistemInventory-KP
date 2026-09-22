@@ -53,9 +53,6 @@ class MonitoringController extends Controller
 
             default:
 
-                /*
-                | 7 hari terakhir
-                */
                 $start = now()->subDays(6)->startOfDay();
                 $end = now()->endOfDay();
 
@@ -82,18 +79,15 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        // Stok habis
         $stokHabis = Barang::where('stok', '<=', 0)
             ->count();
 
 
-        // Stok menipis berdasarkan stok minimum masing-masing barang
         $stokMenipis = Barang::where('stok', '>', 0)
             ->whereColumn('stok', '<=', 'stok_minimum')
             ->count();
 
 
-        // Stok aman
         $stokAman = Barang::where('stok', '>', 0)
             ->whereColumn('stok', '>', 'stok_minimum')
             ->count();
@@ -103,10 +97,6 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         | STOK BERLEBIH
         |--------------------------------------------------------------------------
-        |
-        | Overstock ditentukan berdasarkan stok yang lebih dari
-        | 3x stok minimum.
-        |
         */
 
         $stokBerlebih = Barang::where('stok_minimum', '>', 0)
@@ -120,42 +110,84 @@ class MonitoringController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | TRANSAKSI BERDASARKAN PERIODE
+        | BARANG MASUK PERIODE
         |--------------------------------------------------------------------------
+        |
+        | Menghitung jumlah TRANSAKSI barang masuk,
+        | bukan jumlah kuantitas barang.
+        |
         */
 
         $barangMasukPeriode = BarangMasuk::whereBetween(
             'tanggal_masuk',
             [$start, $end]
-        )->sum('jumlah');
+        )->count();
 
 
-        $barangKeluarPeriode = BarangKeluar::whereBetween(
+        /*
+        |--------------------------------------------------------------------------
+        | BARANG KELUAR PERIODE
+        |--------------------------------------------------------------------------
+        |
+        | 1 header BarangKeluar = 1 transaksi.
+        |
+        | Penjualan yang memiliki banyak detail tetap dihitung
+        | sebagai 1 transaksi.
+        |
+        */
+
+        $keluarBiasaPeriode = BarangKeluar::whereBetween(
             'tanggal_keluar',
             [$start, $end]
-        )->sum('jumlah');
+        )
+            ->where('jenis_keluar', '!=', 'Penjualan')
+            ->count();
+
+
+        $keluarPenjualanPeriode = BarangKeluar::whereBetween(
+            'tanggal_keluar',
+            [$start, $end]
+        )
+            ->where('jenis_keluar', 'Penjualan')
+            ->count();
+
+
+        $barangKeluarPeriode =
+            $keluarBiasaPeriode +
+            $keluarPenjualanPeriode;
 
 
         /*
         |--------------------------------------------------------------------------
         | AKTIVITAS HARI INI
         |--------------------------------------------------------------------------
-        |
-        | Tetap menggunakan nama variabel lama agar Blade lama
-        | juga tetap kompatibel.
-        |
         */
 
         $barangMasukHariIni = BarangMasuk::whereDate(
             'tanggal_masuk',
             today()
-        )->sum('jumlah');
+        )->count();
 
 
-        $barangKeluarHariIni = BarangKeluar::whereDate(
+        $keluarBiasaHariIni = BarangKeluar::whereDate(
             'tanggal_keluar',
             today()
-        )->sum('jumlah');
+        )
+            ->where('jenis_keluar', '!=', 'Penjualan')
+            ->count();
+
+
+        $keluarPenjualanHariIni = BarangKeluar::whereDate(
+            'tanggal_keluar',
+            today()
+        )
+            ->where('jenis_keluar', 'Penjualan')
+            ->count();
+
+
+        $barangKeluarHariIni =
+            $keluarBiasaHariIni +
+            $keluarPenjualanHariIni;
 
 
         /*
@@ -164,14 +196,12 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        // Stock opname pada periode yang dipilih
         $stockOpnamePeriode = StockOpname::whereBetween(
             'tanggal_opname',
             [$start, $end]
         )->count();
 
 
-        // Stock opname bulan berjalan
         $stockOpnameBulanIni = StockOpname::whereBetween(
             'tanggal_opname',
             [
@@ -198,18 +228,21 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         | BARANG HAMPIR KADALUARSA
         |--------------------------------------------------------------------------
-        |
-        | Barang yang memiliki tanggal kadaluarsa mulai hari ini
-        | sampai dengan 30 hari ke depan.
-        |
-        | Menggunakan barang_id yang unik agar satu barang dengan
-        | beberapa transaksi barang masuk tidak dihitung berkali-kali.
-        |
         */
 
-        $barangHampirKadaluarsa = BarangMasuk::whereNotNull('expired_date')
-            ->whereDate('expired_date', '>=', today())
-            ->whereDate('expired_date', '<=', now()->addDays(30))
+        $barangHampirKadaluarsa = BarangMasuk::whereNotNull(
+            'expired_date'
+        )
+            ->whereDate(
+                'expired_date',
+                '>=',
+                today()
+            )
+            ->whereDate(
+                'expired_date',
+                '<=',
+                now()->addDays(30)
+            )
             ->distinct()
             ->count('barang_id');
 
@@ -249,141 +282,264 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $aktivitasTerbaru = collect()
+        $aktivitasMasuk = collect(
+            BarangMasuk::with('barang')
+                ->whereBetween('tanggal_masuk', [$start, $end])
+                ->latest('created_at')
+                ->take(5)
+                ->get()
+                ->map(function ($item) {
 
-            ->merge(
+                    return [
+                        'tanggal' => $item->created_at,
+                        'kode'    => $item->kode_transaksi,
+                        'barang'  => optional($item->barang)->nama_barang ?? '-',
+                        'jenis'   => 'Barang Masuk',
+                        'badge'   => 'success',
+                    ];
 
-                BarangMasuk::with('barang')
-                    ->whereBetween(
-                        'tanggal_masuk',
-                        [$start, $end]
-                    )
-                    ->latest('tanggal_masuk')
-                    ->take(5)
-                    ->get()
-                    ->map(function ($item) {
+                })
+                ->toArray()
+        );
 
-                        return [
 
-                            'tanggal' => $item->tanggal_masuk,
+        $aktivitasKeluar = collect(
+            BarangKeluar::with([
+                    'barang',
+                    'details.barang'
+                ])
+                ->whereBetween('tanggal_keluar', [$start, $end])
+                ->latest('created_at')
+                ->take(5)
+                ->get()
+                ->map(function ($item) {
 
-                            'kode' => $item->kode_transaksi,
+                    if ($item->jenis_keluar === 'Penjualan') {
 
-                            'barang' => optional(
-                                $item->barang
-                            )->nama_barang,
+                        $namaBarang = $item->details
+                            ->map(function ($detail) {
+                                return optional($detail->barang)->nama_barang;
+                            })
+                            ->filter()
+                            ->unique()
+                            ->implode(', ');
 
-                            'jenis' => 'Masuk',
+                        $jenis = 'Penjualan';
 
-                            'badge' => 'success'
+                    } else {
 
-                        ];
+                        $namaBarang = optional($item->barang)->nama_barang ?? '-';
 
-                    })
+                        $jenis = $item->jenis_keluar;
+                    }
 
-            )
+                    return [
+                        'tanggal' => $item->created_at,
+                        'kode'    => $item->kode_transaksi,
+                        'barang'  => $namaBarang ?: '-',
+                        'jenis'   => $jenis,
+                        'badge'   => 'danger',
+                    ];
 
-            ->merge(
+                })
+                ->toArray()
+        );
 
-                BarangKeluar::with('barang')
-                    ->whereBetween(
-                        'tanggal_keluar',
-                        [$start, $end]
-                    )
-                    ->latest('tanggal_keluar')
-                    ->take(5)
-                    ->get()
-                    ->map(function ($item) {
 
-                        return [
-
-                            'tanggal' => $item->tanggal_keluar,
-
-                            'kode' => $item->kode_transaksi,
-
-                            'barang' => optional(
-                                $item->barang
-                            )->nama_barang,
-
-                            'jenis' => 'Keluar',
-
-                            'badge' => 'danger'
-
-                        ];
-
-                    })
-
-            )
-
+        $aktivitasTerbaru = $aktivitasMasuk
+            ->merge($aktivitasKeluar)
             ->sortByDesc('tanggal')
-
             ->take(8)
+            ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ANALISIS PERGERAKAN BARANG
+        |--------------------------------------------------------------------------
+        |
+        | Bagian ini BERBEDA dengan total transaksi.
+        |
+        | Fast Moving / Slow Moving menghitung jumlah barang
+        | yang benar-benar keluar.
+        |
+        | Non-Penjualan:
+        |   barang_keluars.jumlah_dasar
+        |
+        | Penjualan:
+        |   barang_keluar_details.jumlah_dasar
+        |
+        */
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. TRANSAKSI NON PENJUALAN
+        |--------------------------------------------------------------------------
+        */
+
+        $keluarBiasa = DB::table('barang_keluars')
+            ->select(
+                'barang_keluars.barang_id',
+                DB::raw(
+                    'SUM(barang_keluars.jumlah_dasar) AS total_keluar'
+                )
+            )
+            ->whereBetween(
+                'barang_keluars.tanggal_keluar',
+                [$start, $end]
+            )
+            ->where(
+                'barang_keluars.jenis_keluar',
+                '!=',
+                'Penjualan'
+            )
+            ->whereNotNull(
+                'barang_keluars.barang_id'
+            )
+            ->groupBy(
+                'barang_keluars.barang_id'
+            )
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. TRANSAKSI PENJUALAN
+        |--------------------------------------------------------------------------
+        */
+
+        $keluarPenjualan = DB::table(
+            'barang_keluar_details'
+        )
+            ->join(
+                'barang_keluars',
+                'barang_keluars.id',
+                '=',
+                'barang_keluar_details.barang_keluar_id'
+            )
+            ->select(
+                'barang_keluar_details.barang_id',
+                DB::raw(
+                    'SUM(barang_keluar_details.jumlah_dasar) AS total_keluar'
+                )
+            )
+            ->whereBetween(
+                'barang_keluars.tanggal_keluar',
+                [$start, $end]
+            )
+            ->where(
+                'barang_keluars.jenis_keluar',
+                'Penjualan'
+            )
+            ->whereNotNull(
+                'barang_keluar_details.barang_id'
+            )
+            ->groupBy(
+                'barang_keluar_details.barang_id'
+            )
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. GABUNGKAN NON PENJUALAN + PENJUALAN
+        |--------------------------------------------------------------------------
+        */
+
+        $pergerakanBarang = $keluarBiasa
+
+            ->concat($keluarPenjualan)
+
+            ->groupBy('barang_id')
+
+            ->map(function ($items, $barangId) {
+
+                return (object) [
+
+                    'barang_id' => $barangId,
+
+                    'total_keluar' => $items->sum(
+                        function ($item) {
+
+                            return (float) $item->total_keluar;
+
+                        }
+                    ),
+
+                ];
+
+            })
 
             ->values();
 
 
         /*
         |--------------------------------------------------------------------------
-        | FAST MOVING
+        | 4. AMBIL DATA BARANG
         |--------------------------------------------------------------------------
         */
 
-        $fastMoving = BarangKeluar::select(
+        $barangIds = $pergerakanBarang
+            ->pluck('barang_id')
+            ->filter()
+            ->unique()
+            ->values();
 
-            'barang_id',
 
-            DB::raw(
-                'SUM(jumlah) as total_keluar'
-            )
-
+        $barangData = Barang::whereIn(
+            'id',
+            $barangIds
         )
-
-        ->whereBetween(
-            'tanggal_keluar',
-            [$start, $end]
-        )
-
-        ->with('barang')
-
-        ->groupBy('barang_id')
-
-        ->orderByDesc('total_keluar')
-
-        ->take(5)
-
-        ->get();
+            ->get()
+            ->keyBy('id');
 
 
         /*
         |--------------------------------------------------------------------------
-        | SLOW MOVING
+        | 5. PASANG NAMA BARANG
         |--------------------------------------------------------------------------
         */
 
-        $slowMoving = BarangKeluar::select(
+        $pergerakanBarang = $pergerakanBarang
 
-            'barang_id',
+            ->map(function ($item) use ($barangData) {
 
-            DB::raw(
-                'SUM(jumlah) as total_keluar'
-            )
+                $barang = $barangData->get(
+                    $item->barang_id
+                );
 
-        )
+                $item->nama_barang = $barang
+                    ? $barang->nama_barang
+                    : '-';
 
-        ->whereBetween(
-            'tanggal_keluar',
-            [$start, $end]
-        )
+                return $item;
 
-        ->with('barang')
+            });
 
-        ->groupBy('barang_id')
 
-        ->orderBy('total_keluar')
+        /*
+        |--------------------------------------------------------------------------
+        | 6. FAST MOVING
+        |--------------------------------------------------------------------------
+        */
 
-        ->take(5)
+        $fastMoving = $pergerakanBarang
+            ->sortByDesc('total_keluar')
+            ->take(5)
+            ->values();
 
-        ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. SLOW MOVING
+        |--------------------------------------------------------------------------
+        */
+
+        $slowMoving = $pergerakanBarang
+            ->sortBy('total_keluar')
+            ->take(5)
+            ->values();
 
 
         /*
@@ -399,11 +555,10 @@ class MonitoringController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | BARANG PALING SERING KELUAR
+        | TOTAL TRANSAKSI BARANG KELUAR
         |--------------------------------------------------------------------------
         |
-        | Dipisahkan dari fastMoving supaya nantinya mudah
-        | dikembangkan menjadi analisis monitoring.
+        | 1 header BarangKeluar = 1 transaksi.
         |
         */
 
@@ -422,7 +577,12 @@ class MonitoringController extends Controller
         $feedback = [];
 
 
-        // Feedback stok habis
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK STOK HABIS
+        |--------------------------------------------------------------------------
+        */
+
         if ($stokHabis > 0) {
 
             $feedback[] = [
@@ -441,7 +601,12 @@ class MonitoringController extends Controller
         }
 
 
-        // Feedback stok menipis
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK STOK MENIPIS
+        |--------------------------------------------------------------------------
+        */
+
         if ($stokMenipis > 0) {
 
             $feedback[] = [
@@ -461,7 +626,12 @@ class MonitoringController extends Controller
         }
 
 
-        // Feedback barang hampir kadaluarsa
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK BARANG HAMPIR KADALUARSA
+        |--------------------------------------------------------------------------
+        */
+
         if ($barangHampirKadaluarsa > 0) {
 
             $feedback[] = [
@@ -482,7 +652,12 @@ class MonitoringController extends Controller
         }
 
 
-        // Feedback barang keluar lebih banyak
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK BARANG KELUAR LEBIH BANYAK
+        |--------------------------------------------------------------------------
+        */
+
         if ($barangKeluarPeriode > $barangMasukPeriode) {
 
             $feedback[] = [
@@ -494,14 +669,19 @@ class MonitoringController extends Controller
                 'title' => 'Pengeluaran Lebih Tinggi',
 
                 'message' =>
-                    "Jumlah barang keluar pada periode ini lebih tinggi " .
-                    "dibandingkan barang masuk. Perhatikan ketersediaan stok."
+                    "Jumlah transaksi barang keluar pada periode ini lebih tinggi " .
+                    "dibandingkan transaksi barang masuk. Perhatikan ketersediaan stok."
 
             ];
         }
 
 
-        // Feedback barang masuk lebih banyak
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK BARANG MASUK LEBIH BANYAK
+        |--------------------------------------------------------------------------
+        */
+
         elseif ($barangMasukPeriode > $barangKeluarPeriode) {
 
             $feedback[] = [
@@ -513,14 +693,19 @@ class MonitoringController extends Controller
                 'title' => 'Penambahan Stok Lebih Tinggi',
 
                 'message' =>
-                    "Jumlah barang masuk pada periode ini lebih tinggi " .
-                    "dibandingkan barang keluar. Terjadi penambahan persediaan."
+                    "Jumlah transaksi barang masuk pada periode ini lebih tinggi " .
+                    "dibandingkan transaksi barang keluar."
 
             ];
         }
 
 
-        // Feedback overstock
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK OVERSTOCK
+        |--------------------------------------------------------------------------
+        */
+
         if ($stokBerlebih > 0) {
 
             $feedback[] = [
@@ -540,7 +725,12 @@ class MonitoringController extends Controller
         }
 
 
-        // Feedback stock opname
+        /*
+        |--------------------------------------------------------------------------
+        | FEEDBACK STOCK OPNAME
+        |--------------------------------------------------------------------------
+        */
+
         if ($stockOpnameBulanIni == 0) {
 
             $feedback[] = [
@@ -598,52 +788,41 @@ class MonitoringController extends Controller
             'monitoring.index',
             compact(
 
-                // Ringkasan
                 'totalBarang',
                 'totalSupplier',
                 'totalStok',
 
-                // Kondisi stok
                 'stokMenipis',
                 'stokHabis',
                 'stokAman',
                 'stokBerlebih',
 
-                // Transaksi
                 'barangMasukPeriode',
                 'barangKeluarPeriode',
 
-                // Aktivitas hari ini
                 'barangMasukHariIni',
                 'barangKeluarHariIni',
 
-                // Stock opname
                 'stockOpnamePeriode',
                 'stockOpnameBulanIni',
 
-                // Kondisi barang
                 'barangHampirHabis',
                 'barangHampirKadaluarsa',
                 'barangHabis',
                 'barangStokBerlebih',
 
-                // Aktivitas
                 'aktivitasTerbaru',
 
-                // Analisis
                 'fastMoving',
                 'slowMoving',
                 'stokTerbanyak',
                 'totalBarangKeluar',
 
-                // Feedback
                 'feedback',
 
-                // Status inventory
                 'statusInventory',
                 'statusInventoryClass',
 
-                // Periode
                 'periode'
             )
         );
@@ -654,6 +833,17 @@ class MonitoringController extends Controller
      * ============================================================
      * DATA GRAFIK MONITORING
      * ============================================================
+     *
+     * Grafik juga menggunakan JUMLAH TRANSAKSI.
+     *
+     * Barang masuk:
+     *   1 record BarangMasuk = 1 transaksi
+     *
+     * Barang keluar:
+     *   1 record BarangKeluar = 1 transaksi
+     *
+     * Penjualan dengan banyak detail tetap = 1 transaksi.
+     *
      */
     public function chart(Request $request)
     {
@@ -674,9 +864,6 @@ class MonitoringController extends Controller
         |--------------------------------------------------------------------------
         | HARI
         |--------------------------------------------------------------------------
-        |
-        | Menampilkan aktivitas berdasarkan jam.
-        |
         */
 
         switch ($periode) {
@@ -692,32 +879,37 @@ class MonitoringController extends Controller
                         );
 
 
+                    /*
+                    | Barang Masuk = jumlah transaksi
+                    */
+
                     $masuk[] =
                         BarangMasuk::whereDate(
                             'tanggal_masuk',
                             today()
                         )
-
                         ->whereRaw(
                             'HOUR(tanggal_masuk) = ?',
                             [$i]
                         )
+                        ->count();
 
-                        ->sum('jumlah');
 
+                    /*
+                    | Barang Keluar = jumlah header transaksi
+                    */
 
                     $keluar[] =
                         BarangKeluar::whereDate(
                             'tanggal_keluar',
                             today()
                         )
-
                         ->whereRaw(
                             'HOUR(tanggal_keluar) = ?',
                             [$i]
                         )
+                        ->count();
 
-                        ->sum('jumlah');
                 }
 
                 break;
@@ -742,22 +934,29 @@ class MonitoringController extends Controller
                         $tanggal->translatedFormat('D');
 
 
+                    /*
+                    | Barang Masuk = jumlah transaksi
+                    */
+
                     $masuk[] =
                         BarangMasuk::whereDate(
                             'tanggal_masuk',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
 
+                    /*
+                    | Barang Keluar = jumlah transaksi
+                    */
 
                     $keluar[] =
                         BarangKeluar::whereDate(
                             'tanggal_keluar',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
                 }
 
                 break;
@@ -771,8 +970,7 @@ class MonitoringController extends Controller
 
             case 'bulan':
 
-                $days =
-                    now()->daysInMonth;
+                $days = now()->daysInMonth;
 
 
                 for ($i = 1; $i <= $days; $i++) {
@@ -789,22 +987,29 @@ class MonitoringController extends Controller
                         $tanggal->format('d');
 
 
+                    /*
+                    | Barang Masuk = jumlah transaksi
+                    */
+
                     $masuk[] =
                         BarangMasuk::whereDate(
                             'tanggal_masuk',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
 
+                    /*
+                    | Barang Keluar = jumlah transaksi
+                    */
 
                     $keluar[] =
                         BarangKeluar::whereDate(
                             'tanggal_keluar',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
                 }
 
                 break;
@@ -829,37 +1034,40 @@ class MonitoringController extends Controller
 
 
                     $labels[] =
-                        $tanggal->translatedFormat(
-                            'M'
-                        );
+                        $tanggal->translatedFormat('M');
 
+
+                    /*
+                    | Barang Masuk = jumlah transaksi
+                    */
 
                     $masuk[] =
                         BarangMasuk::whereYear(
                             'tanggal_masuk',
                             now()->year
                         )
-
                         ->whereMonth(
                             'tanggal_masuk',
                             $i
                         )
+                        ->count();
 
-                        ->sum('jumlah');
 
+                    /*
+                    | Barang Keluar = jumlah transaksi
+                    */
 
                     $keluar[] =
                         BarangKeluar::whereYear(
                             'tanggal_keluar',
                             now()->year
                         )
-
                         ->whereMonth(
                             'tanggal_keluar',
                             $i
                         )
+                        ->count();
 
-                        ->sum('jumlah');
                 }
 
                 break;
@@ -884,22 +1092,29 @@ class MonitoringController extends Controller
                         $tanggal->translatedFormat('D');
 
 
+                    /*
+                    | Barang Masuk = jumlah transaksi
+                    */
+
                     $masuk[] =
                         BarangMasuk::whereDate(
                             'tanggal_masuk',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
 
+                    /*
+                    | Barang Keluar = jumlah transaksi
+                    */
 
                     $keluar[] =
                         BarangKeluar::whereDate(
                             'tanggal_keluar',
                             $tanggal
                         )
+                        ->count();
 
-                        ->sum('jumlah');
                 }
 
                 break;

@@ -85,7 +85,13 @@
                         </td>
 
                         <td>
-                            {{ $item->created_at->format('d-m-Y H:i:s') }}
+                            @if($item->created_at)
+                                {{ $item->created_at
+                                    ->timezone('Asia/Jakarta')
+                                    ->format('d-m-Y H:i:s') }}
+                            @else
+                                -
+                            @endif
                         </td>
 
                         <td>
