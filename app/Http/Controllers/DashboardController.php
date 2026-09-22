@@ -48,6 +48,9 @@ class DashboardController extends Controller
 
         $barangMendekatiEd = BarangMasuk::with('barang')
             ->whereNotNull('expired_date')
+            ->whereHas('barang', function ($query) {
+                $query->where('stok', '>', 0);
+            })
             ->whereDate('expired_date', '>=', today())
             ->whereDate('expired_date', '<=', now()->addDays(30))
             ->orderBy('expired_date')

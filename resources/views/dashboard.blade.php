@@ -915,6 +915,7 @@
                     <h3 class="card-title">
 
                         <i class="fas fa-calendar-times text-warning mr-2"></i>
+
                         Monitoring Barang Expired
 
                     </h3>
@@ -927,7 +928,7 @@
 
                 <small class="text-muted d-block mt-1">
                     Menampilkan barang yang memiliki tanggal kedaluwarsa
-                    dan perlu dipantau.
+                    dan stoknya masih tersedia.
                 </small>
 
             </div>
@@ -943,6 +944,11 @@
 
                     foreach ($barangMendekatiEd as $expiredItem) {
 
+                        // Jangan tampilkan barang yang stoknya sudah habis
+                        if (!$expiredItem->barang || $expiredItem->barang->stok <= 0) {
+                            continue;
+                        }
+
                         $expiredDate = \Carbon\Carbon::parse(
                             $expiredItem->expired_date
                         );
@@ -955,12 +961,19 @@
                             );
 
                         if ($daysRemaining < 0) {
+
                             $expiredCount++;
+
                         } elseif ($daysRemaining <= 7) {
+
                             $kritisCount++;
+
                         } else {
+
                             $pantauCount++;
+
                         }
+
                     }
 
                 @endphp
@@ -979,6 +992,7 @@
                             </div>
 
                             <div>
+
                                 <strong>
                                     {{ $expiredCount }}
                                 </strong>
@@ -986,6 +1000,7 @@
                                 <small>
                                     Sudah Expired
                                 </small>
+
                             </div>
 
                         </div>
@@ -1002,6 +1017,7 @@
                             </div>
 
                             <div>
+
                                 <strong>
                                     {{ $kritisCount }}
                                 </strong>
@@ -1009,6 +1025,7 @@
                                 <small>
                                     ≤ 7 Hari
                                 </small>
+
                             </div>
 
                         </div>
@@ -1025,6 +1042,7 @@
                             </div>
 
                             <div>
+
                                 <strong>
                                     {{ $pantauCount }}
                                 </strong>
@@ -1032,6 +1050,7 @@
                                 <small>
                                     Perlu Dipantau
                                 </small>
+
                             </div>
 
                         </div>
@@ -1074,151 +1093,173 @@
 
                         <tbody>
 
-                        @forelse($barangMendekatiEd as $item)
-
                             @php
-
-                                $tanggalEd = \Carbon\Carbon::parse(
-                                    $item->expired_date
-                                );
-
-                                $sisaHari = now()
-                                    ->startOfDay()
-                                    ->diffInDays(
-                                        $tanggalEd,
-                                        false
-                                    );
-
+                                $adaBarangEd = false;
                             @endphp
 
 
-                            <tr>
+                            @foreach($barangMendekatiEd as $item)
 
-                                <td>
+                                @if(!$item->barang || $item->barang->stok <= 0)
+                                    @continue
+                                @endif
 
-                                    <strong>
-                                        {{ $item->barang->nama_barang ?? '-' }}
-                                    </strong>
 
-                                    <br>
+                                @php
 
-                                    <small class="text-muted">
-                                        {{ $item->barang->kode_barang ?? '-' }}
-                                    </small>
+                                    $adaBarangEd = true;
 
-                                    @if(isset($item->supplier))
+                                    $tanggalEd = \Carbon\Carbon::parse(
+                                        $item->expired_date
+                                    );
+
+                                    $sisaHari = now()
+                                        ->startOfDay()
+                                        ->diffInDays(
+                                            $tanggalEd,
+                                            false
+                                        );
+
+                                @endphp
+
+
+                                <tr>
+
+                                    <td>
+
+                                        <strong>
+                                            {{ $item->barang->nama_barang ?? '-' }}
+                                        </strong>
 
                                         <br>
 
                                         <small class="text-muted">
-                                            <i class="fas fa-truck mr-1"></i>
-                                            {{ $item->supplier->nama_supplier ?? '-' }}
+                                            {{ $item->barang->kode_barang ?? '-' }}
                                         </small>
 
-                                    @endif
+                                        @if(isset($item->supplier))
 
-                                </td>
+                                            <br>
 
+                                            <small class="text-muted">
 
-                                <td class="text-center">
+                                                <i class="fas fa-truck mr-1"></i>
 
-                                    <strong>
-                                        {{ $tanggalEd->format('d-m-Y') }}
-                                    </strong>
+                                                {{ $item->supplier->nama_supplier ?? '-' }}
 
-                                    <br>
+                                            </small>
 
-                                    <small class="text-muted">
-                                        {{ $tanggalEd->translatedFormat('l') }}
-                                    </small>
+                                        @endif
 
-                                </td>
+                                    </td>
 
 
-                                <td class="text-center">
+                                    <td class="text-center">
 
-                                    @if($sisaHari < 0)
-
-                                        <strong class="text-danger">
-                                            {{ abs($sisaHari) }} hari
+                                        <strong>
+                                            {{ $tanggalEd->format('d-m-Y') }}
                                         </strong>
 
                                         <br>
 
-                                        <small class="text-danger">
-                                            Terlewat
+                                        <small class="text-muted">
+                                            {{ $tanggalEd->translatedFormat('l') }}
                                         </small>
 
-                                    @elseif($sisaHari == 0)
-
-                                        <strong class="text-danger">
-                                            Hari ini
-                                        </strong>
-
-                                    @else
-
-                                        <strong
-                                            class="{{ $sisaHari <= 7 ? 'text-danger' : ($sisaHari <= 30 ? 'text-warning' : 'text-info') }}"
-                                        >
-                                            {{ $sisaHari }} hari
-                                        </strong>
-
-                                    @endif
-
-                                </td>
+                                    </td>
 
 
-                                <td class="text-center">
+                                    <td class="text-center">
 
-                                    @if($sisaHari < 0)
+                                        @if($sisaHari < 0)
 
-                                        <span class="stock-badge badge-stock-danger">
-                                            Expired
-                                        </span>
+                                            <strong class="text-danger">
+                                                {{ abs($sisaHari) }} hari
+                                            </strong>
 
-                                    @elseif($sisaHari <= 7)
+                                            <br>
 
-                                        <span class="stock-badge badge-stock-danger">
-                                            Kritis
-                                        </span>
+                                            <small class="text-danger">
+                                                Terlewat
+                                            </small>
 
-                                    @elseif($sisaHari <= 30)
+                                        @elseif($sisaHari == 0)
 
-                                        <span class="stock-badge badge-stock-warning">
-                                            Segera
-                                        </span>
+                                            <strong class="text-danger">
+                                                Hari ini
+                                            </strong>
 
-                                    @else
+                                        @else
 
-                                        <span class="stock-badge badge-stock-info">
-                                            Dipantau
-                                        </span>
+                                            <strong
+                                                class="{{ $sisaHari <= 7
+                                                    ? 'text-danger'
+                                                    : ($sisaHari <= 30
+                                                        ? 'text-warning'
+                                                        : 'text-info') }}"
+                                            >
+                                                {{ $sisaHari }} hari
+                                            </strong>
 
-                                    @endif
+                                        @endif
 
-                                </td>
+                                    </td>
 
-                            </tr>
 
-                        @empty
+                                    <td class="text-center">
 
-                            <tr>
+                                        @if($sisaHari < 0)
 
-                                <td
-                                    colspan="4"
-                                    class="text-center text-muted py-4"
-                                >
+                                            <span class="stock-badge badge-stock-danger">
+                                                Expired
+                                            </span>
 
-                                    <i class="fas fa-check-circle text-success mr-1"></i>
+                                        @elseif($sisaHari <= 7)
 
-                                    Tidak ada barang yang perlu dipantau
-                                    terkait tanggal kedaluwarsa.
+                                            <span class="stock-badge badge-stock-danger">
+                                                Kritis
+                                            </span>
 
-                                </td>
+                                        @elseif($sisaHari <= 30)
 
-                            </tr>
+                                            <span class="stock-badge badge-stock-warning">
+                                                Segera
+                                            </span>
 
-                        @endforelse
+                                        @else
+
+                                            <span class="stock-badge badge-stock-info">
+                                                Dipantau
+                                            </span>
+
+                                        @endif
+
+                                    </td>
+
+                                </tr>
+
+                            @endforeach
+
+
+                            @if(!$adaBarangEd)
+
+                                <tr>
+
+                                    <td
+                                        colspan="4"
+                                        class="text-center text-muted py-4"
+                                    >
+
+                                        <i class="fas fa-check-circle text-success mr-1"></i>
+
+                                        Tidak ada barang yang perlu dipantau
+                                        terkait tanggal kedaluwarsa.
+
+                                    </td>
+
+                                </tr>
+
+                            @endif
 
                         </tbody>
 
@@ -1232,7 +1273,8 @@
 
     </div>
 
-    @endcan
+
+        @endcan
 
 
 </div>
